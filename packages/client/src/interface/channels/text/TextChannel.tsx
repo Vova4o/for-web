@@ -73,6 +73,8 @@ export function TextChannel(props: ChannelPageProps) {
   const canConnect = () =>
     props.channel.isVoice && props.channel.havePermission("Connect");
 
+  const [showSidebarOnMobile, setShowSidebarOnMobile] = createSignal(false);
+
   // Get a reference to the message box's load latest function
   let jumpToBottomRef: ((nearby?: string) => void) | undefined;
 
@@ -159,6 +161,23 @@ export function TextChannel(props: ChannelPageProps) {
   return (
     <>
       <Header placement="primary">
+        <div
+          class="mobile-menu-button"
+          onClick={() => {
+            const sidebar = document.getElementById("app-sidebar");
+            if (sidebar) {
+              if (sidebar.classList.contains("mobile-sidebar-hidden")) {
+                sidebar.classList.remove("mobile-sidebar-hidden");
+                setShowSidebarOnMobile(true);
+              } else {
+                sidebar.classList.add("mobile-sidebar-hidden");
+                setShowSidebarOnMobile(false);
+              }
+            }
+          }}
+        >
+          <Symbol>menu</Symbol>
+        </div>
         <ChannelHeader
           channel={props.channel}
           sidebarState={sidebarState}
@@ -166,7 +185,15 @@ export function TextChannel(props: ChannelPageProps) {
         />
       </Header>
       <Content>
-        <main class={main()}>
+        <main
+          class={main()}
+          style={{
+            display:
+              showSidebarOnMobile() && window.innerWidth <= 768
+                ? "none"
+                : "flex",
+          }}
+        >
           <Show
             when={canConnect()}
             fallback={
@@ -213,6 +240,7 @@ export function TextChannel(props: ChannelPageProps) {
         </main>
         <Show
           when={
+            showSidebarOnMobile() ||
             (state.layout.getSectionState(
               LAYOUT_SECTIONS.MEMBER_SIDEBAR,
               true,
@@ -230,6 +258,10 @@ export function TextChannel(props: ChannelPageProps) {
             }}
             style={{
               width: sidebarState().state !== "default" ? "360px" : "",
+              display:
+                !showSidebarOnMobile() && window.innerWidth <= 768
+                  ? "none"
+                  : "block",
             }}
           >
             <Switch

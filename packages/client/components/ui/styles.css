@@ -137,3 +137,7 @@ body {
 .hljs-tag {
   /* purposely ignored */
 }
+@media (max-width: 768px) { .mobile-menu-button { cursor: pointer; margin-right: 16px; display: flex; align-items: center; justify-content: center; height: 100%; } }
+@media (min-width: 769px) { .mobile-menu-button { display: none !important; } }
+@media (max-width: 768px) { .mobile-sidebar-hidden { display: none !important; } }
+@media (max-width: 768px) { #app-sidebar { position: absolute; z-index: 1000; height: 100%; background: var(--md-sys-color-surface-container-high); } }

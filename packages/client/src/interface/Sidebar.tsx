@@ -33,7 +33,11 @@ export const Sidebar = (props: {
   const location = useLocation();
 
   return (
-    <div style={{ display: "flex", "flex-shrink": 0 }}>
+    <div
+      class="mobile-sidebar-hidden"
+      id="app-sidebar"
+      style={{ display: "flex", "flex-shrink": 0 }}
+    >
       <ServerList
         orderedServers={state.ordering.orderedServers(client())}
         setServerOrder={state.ordering.setServerOrder}
