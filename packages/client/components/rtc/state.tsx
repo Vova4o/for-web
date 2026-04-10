@@ -160,6 +160,19 @@ class Voice {
       this.#setScreenshare(false);
     });
 
+    const playJoinSound = () => {
+      const audio = new Audio("/audio/join.wav");
+      audio.play().catch(() => {});
+    };
+
+    const playLeaveSound = () => {
+      const audio = new Audio("/audio/leave.wav");
+      audio.play().catch(() => {});
+    };
+
+    room.addListener("participantConnected", playJoinSound);
+    room.addListener("participantDisconnected", playLeaveSound);
+
     room.addListener("connected", () => {
       this.#setState("CONNECTED");
       if (this.speakingPermission)
