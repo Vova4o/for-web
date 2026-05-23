@@ -45,12 +45,14 @@ const useFieldConfiguration = () => {
     password: {
       minLength: 8,
       type: "password" as const,
+      "toggle-password": true,
       name: () => t`Password`,
       placeholder: () => t`Enter your current password.`,
     },
     "new-password": {
       minLength: 8,
       type: "password" as const,
+      "toggle-password": true,
       autocomplete: "new-password",
       name: () => t`New Password`,
       placeholder: () => t`Enter a new password.`,
