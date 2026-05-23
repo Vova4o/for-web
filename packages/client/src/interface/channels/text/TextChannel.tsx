@@ -26,6 +26,7 @@ import {
   TypingIndicator,
   main,
 } from "@revolt/ui";
+import { Symbol } from "@revolt/ui/components/utils/Symbol";
 import { VoiceChannelCallCardMount } from "@revolt/ui/components/features/voice/callCard/VoiceCallCard";
 
 import { ChannelHeader } from "../ChannelHeader";
