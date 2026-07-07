@@ -160,14 +160,37 @@ class Voice {
       this.#setScreenshare(false);
     });
 
+    // Pre-create and "unlock" the call sound effects while we are still inside
+    // the user gesture that triggered connect() (the join-call click). Browsers,
+    // Safari in particular, block Audio.play() invoked later from programmatic
+    // events (participant join/leave) unless the element was first activated
+    // during a user interaction — the previous per-event `new Audio()` was
+    // silently rejected by autoplay policy. Priming muted, then reusing the same
+    // element, makes playback reliable across browsers.
+    const joinSound = new Audio("/audio/join.wav");
+    const leaveSound = new Audio("/audio/leave.wav");
+    for (const sound of [joinSound, leaveSound]) {
+      sound.muted = true;
+      sound
+        .play()
+        .then(() => {
+          sound.pause();
+          sound.currentTime = 0;
+          sound.muted = false;
+        })
+        .catch(() => {
+          sound.muted = false;
+        });
+    }
+
     const playJoinSound = () => {
-      const audio = new Audio("/audio/join.wav");
-      audio.play().catch(() => {});
+      joinSound.currentTime = 0;
+      joinSound.play().catch(() => {});
     };
 
     const playLeaveSound = () => {
-      const audio = new Audio("/audio/leave.wav");
-      audio.play().catch(() => {});
+      leaveSound.currentTime = 0;
+      leaveSound.play().catch(() => {});
     };
 
     room.addListener("participantConnected", playJoinSound);
