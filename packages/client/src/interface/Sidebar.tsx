@@ -37,6 +37,14 @@ export const Sidebar = (props: {
       class="mobile-sidebar-hidden"
       id="app-sidebar"
       style={{ display: "flex", "flex-shrink": 0 }}
+      onClick={(event) => {
+        if (
+          window.matchMedia("(max-width: 768px)").matches &&
+          (event.target as HTMLElement).closest("a")
+        ) {
+          event.currentTarget.classList.add("mobile-sidebar-hidden");
+        }
+      }}
     >
       <ServerList
         orderedServers={state.ordering.orderedServers(client())}

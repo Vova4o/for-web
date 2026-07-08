@@ -104,6 +104,13 @@ const Base = styled("div", {
     flex: "1 0 218px",
     paddingLeft: "8px",
     justifyContent: "flex-end",
+
+    "@media (max-width: 768px)": {
+      flex: "0 0 auto",
+      width: "100%",
+      paddingLeft: 0,
+      justifyContent: "stretch",
+    },
   },
 });
 
@@ -122,6 +129,13 @@ const Content = styled("div", {
 
     "& a > div": {
       margin: 0,
+    },
+
+    "@media (max-width: 768px)": {
+      width: "100%",
+      maxWidth: "none",
+      minWidth: 0,
+      padding: "16px 12px",
     },
   },
 });

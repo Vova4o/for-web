@@ -72,6 +72,14 @@ const base = cva({
     "& > a": {
       textDecoration: "none",
     },
+
+    "@media (max-width: 768px)": {
+      flex: "0 0 auto",
+      width: "100%",
+      minHeight: "100dvh",
+      borderStartStartRadius: 0,
+      borderEndStartRadius: 0,
+    },
   },
 });
 
@@ -88,6 +96,11 @@ const InnerContent = styled("div", {
     padding: "80px 32px",
     justifyContent: "stretch",
     zIndex: 1,
+
+    "@media (max-width: 768px)": {
+      padding: "24px 16px",
+      maxWidth: "none",
+    },
   },
 });
 
@@ -125,6 +138,11 @@ const CloseAction = styled("div", {
       fontWeight: 600,
       color: "var(--md-sys-color-on-surface)",
       fontSize: "0.75rem",
+    },
+
+    "@media (max-width: 768px)": {
+      flexGrow: 0,
+      padding: "24px 12px 0 0",
     },
   },
 });

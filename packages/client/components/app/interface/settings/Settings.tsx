@@ -8,6 +8,7 @@ import {
   useContext,
 } from "solid-js";
 import { Motion, Presence } from "solid-motionone";
+import { styled } from "styled-system/jsx";
 
 import { Rerun } from "@solid-primitives/keyed";
 
@@ -91,7 +92,7 @@ export function Settings(props: SettingsProps & SettingsConfiguration<never>) {
     >
       <MemoisedList context={props.context} list={props.list}>
         {(list) => (
-          <>
+          <SettingsLayout>
             <SettingsSidebar list={list} page={page} setPage={setPage} />
             <SettingsContent
               page={page}
@@ -144,12 +145,29 @@ export function Settings(props: SettingsProps & SettingsConfiguration<never>) {
                 </Rerun>
               </Presence>
             </SettingsContent>
-          </>
+          </SettingsLayout>
         )}
       </MemoisedList>
     </SettingsNavigationContext.Provider>
   );
 }
+
+/**
+ * Settings modal layout
+ */
+const SettingsLayout = styled("div", {
+  base: {
+    width: "100%",
+    height: "100%",
+    minWidth: 0,
+    display: "flex",
+
+    "@media (max-width: 768px)": {
+      overflow: "auto",
+      flexDirection: "column",
+    },
+  },
+});
 
 /**
  * Memoise the list but generate it within context

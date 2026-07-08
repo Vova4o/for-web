@@ -45,6 +45,21 @@ interface Props {
    * Set sidebar state
    */
   setSidebarState?: Setter<SidebarState>;
+
+  /**
+   * Whether the secondary sidebar is open on mobile.
+   */
+  isSecondarySidebarOpen?: Accessor<boolean>;
+
+  /**
+   * Open the secondary sidebar on mobile.
+   */
+  openSecondarySidebar?: () => void;
+
+  /**
+   * Close the secondary sidebar on mobile.
+   */
+  closeSecondarySidebar?: () => void;
 }
 
 /**
@@ -66,6 +81,45 @@ export function ChannelHeader(props: Props) {
       return "";
     }
   };
+
+  function togglePins() {
+    if (props.sidebarState!().state === "pins") {
+      props.setSidebarState!({ state: "default" });
+      props.closeSecondarySidebar?.();
+    } else {
+      props.setSidebarState!({ state: "pins" });
+      props.openSecondarySidebar?.();
+    }
+  }
+
+  function toggleMembers() {
+    if (
+      props.isSecondarySidebarOpen?.() &&
+      props.sidebarState!().state === "default"
+    ) {
+      props.closeSecondarySidebar?.();
+      return;
+    }
+
+    props.openSecondarySidebar?.();
+
+    if (props.sidebarState!().state === "default") {
+      state.layout.toggleSectionState(LAYOUT_SECTIONS.MEMBER_SIDEBAR, true);
+    } else {
+      state.layout.setSectionState(LAYOUT_SECTIONS.MEMBER_SIDEBAR, true, true);
+      props.setSidebarState!({ state: "default" });
+    }
+  }
+
+  function updateSearch(value: string) {
+    if (value) {
+      props.setSidebarState!({ state: "search", query: value });
+      props.openSecondarySidebar?.();
+    } else {
+      props.setSidebarState!({ state: "default" });
+      props.closeSecondarySidebar?.();
+    }
+  }
 
   return (
     <>
@@ -189,15 +243,7 @@ export function ChannelHeader(props: Props) {
               content: t`View pinned messages`,
             },
           }}
-          onPress={() =>
-            props.sidebarState!().state === "pins"
-              ? props.setSidebarState!({
-                  state: "default",
-                })
-              : props.setSidebarState!({
-                  state: "pins",
-                })
-          }
+          onPress={togglePins}
         >
           <MdKeep />
         </IconButton>
@@ -205,24 +251,7 @@ export function ChannelHeader(props: Props) {
 
       <Show when={props.sidebarState && props.channel.type !== "SavedMessages"}>
         <IconButton
-          onPress={() => {
-            if (props.sidebarState!().state === "default") {
-              state.layout.toggleSectionState(
-                LAYOUT_SECTIONS.MEMBER_SIDEBAR,
-                true,
-              );
-            } else {
-              state.layout.setSectionState(
-                LAYOUT_SECTIONS.MEMBER_SIDEBAR,
-                true,
-                true,
-              );
-
-              props.setSidebarState!({
-                state: "default",
-              });
-            }
-          }}
+          onPress={toggleMembers}
           use:floating={{
             tooltip: {
               placement: "bottom",
@@ -239,22 +268,19 @@ export function ChannelHeader(props: Props) {
           class={css({
             height: "40px",
             width: "240px",
+            maxWidth: "34vw",
             paddingInline: "16px",
             borderRadius: "var(--borderRadius-full)",
             background: "var(--md-sys-color-surface-container-high)",
+
+            "@media (max-width: 768px)": {
+              width: "min(180px, 34vw)",
+              paddingInline: "12px",
+            },
           })}
           placeholder="Search messages..."
           value={searchValue()!}
-          onChange={(e) =>
-            e.currentTarget.value
-              ? props.setSidebarState!({
-                  state: "search",
-                  query: e.currentTarget.value,
-                })
-              : props.setSidebarState!({
-                  state: "default",
-                })
-          }
+          onChange={(e) => updateSearch(e.currentTarget.value)}
         />
       </Show>
     </>
@@ -270,6 +296,10 @@ const Divider = styled("div", {
     margin: "0px 5px",
     paddingLeft: "1px",
     backgroundColor: "var(--md-sys-color-outline-variant)",
+
+    "@media (max-width: 768px)": {
+      display: "none",
+    },
   },
 });
 
@@ -278,4 +308,8 @@ const Divider = styled("div", {
  */
 const descriptionLink = css({
   minWidth: 0,
+
+  "@media (max-width: 768px)": {
+    display: "none",
+  },
 });

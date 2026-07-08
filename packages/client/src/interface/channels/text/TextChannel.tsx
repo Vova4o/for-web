@@ -26,8 +26,8 @@ import {
   TypingIndicator,
   main,
 } from "@revolt/ui";
-import { Symbol } from "@revolt/ui/components/utils/Symbol";
 import { VoiceChannelCallCardMount } from "@revolt/ui/components/features/voice/callCard/VoiceCallCard";
+import { Symbol } from "@revolt/ui/components/utils/Symbol";
 
 import { ChannelHeader } from "../ChannelHeader";
 import { ChannelPageProps } from "../ChannelPage";
@@ -74,7 +74,8 @@ export function TextChannel(props: ChannelPageProps) {
   const canConnect = () =>
     props.channel.isVoice && props.channel.havePermission("Connect");
 
-  const [showSidebarOnMobile, setShowSidebarOnMobile] = createSignal(false);
+  const [showSecondarySidebarOnMobile, setShowSecondarySidebarOnMobile] =
+    createSignal(false);
 
   // Get a reference to the message box's load latest function
   let jumpToBottomRef: ((nearby?: string) => void) | undefined;
@@ -155,46 +156,39 @@ export function TextChannel(props: ChannelPageProps) {
   createEffect(
     on(
       () => props.channel.id,
-      () => setSidebarState({ state: "default" }),
+      () => {
+        setSidebarState({ state: "default" });
+        setShowSecondarySidebarOnMobile(false);
+        document
+          .getElementById("app-sidebar")
+          ?.classList.add("mobile-sidebar-hidden");
+      },
     ),
   );
+
+  function togglePrimarySidebarOnMobile() {
+    document
+      .getElementById("app-sidebar")
+      ?.classList.toggle("mobile-sidebar-hidden");
+  }
 
   return (
     <>
       <Header placement="primary">
-        <div
-          class="mobile-menu-button"
-          onClick={() => {
-            const sidebar = document.getElementById("app-sidebar");
-            if (sidebar) {
-              if (sidebar.classList.contains("mobile-sidebar-hidden")) {
-                sidebar.classList.remove("mobile-sidebar-hidden");
-                setShowSidebarOnMobile(true);
-              } else {
-                sidebar.classList.add("mobile-sidebar-hidden");
-                setShowSidebarOnMobile(false);
-              }
-            }
-          }}
-        >
+        <div class="mobile-menu-button" onClick={togglePrimarySidebarOnMobile}>
           <Symbol>menu</Symbol>
         </div>
         <ChannelHeader
           channel={props.channel}
           sidebarState={sidebarState}
           setSidebarState={setSidebarState}
+          isSecondarySidebarOpen={showSecondarySidebarOnMobile}
+          openSecondarySidebar={() => setShowSecondarySidebarOnMobile(true)}
+          closeSecondarySidebar={() => setShowSecondarySidebarOnMobile(false)}
         />
       </Header>
       <Content>
-        <main
-          class={main()}
-          style={{
-            display:
-              showSidebarOnMobile() && window.innerWidth <= 768
-                ? "none"
-                : "flex",
-          }}
-        >
+        <main class={main()}>
           <Show
             when={canConnect()}
             fallback={
@@ -241,7 +235,6 @@ export function TextChannel(props: ChannelPageProps) {
         </main>
         <Show
           when={
-            showSidebarOnMobile() ||
             (state.layout.getSectionState(
               LAYOUT_SECTIONS.MEMBER_SIDEBAR,
               true,
@@ -255,14 +248,14 @@ export function TextChannel(props: ChannelPageProps) {
             use:scrollable={{
               direction: "y",
               showOnHover: true,
-              class: sidebar(),
+              class: `${sidebar()} mobile-secondary-sidebar ${
+                showSecondarySidebarOnMobile()
+                  ? ""
+                  : "mobile-secondary-sidebar-hidden"
+              }`,
             }}
             style={{
               width: sidebarState().state !== "default" ? "360px" : "",
-              display:
-                !showSidebarOnMobile() && window.innerWidth <= 768
-                  ? "none"
-                  : "block",
             }}
           >
             <Switch
