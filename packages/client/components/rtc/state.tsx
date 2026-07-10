@@ -4,6 +4,7 @@ import {
   createContext,
   createSignal,
   JSX,
+  onCleanup,
   Setter,
   useContext,
 } from "solid-js";
@@ -15,6 +16,7 @@ import {
 
 import {
   Room,
+  RoomEvent,
   ScreenSharePresets,
   Track,
   VideoResolution,
@@ -83,6 +85,15 @@ class Voice {
 
   private openModal;
   private getClient;
+  #shouldReconnect = false;
+  #resumeInProgress = false;
+  #connectionAttempt = 0;
+
+  #handleVisibilityChange = () => {
+    if (document.visibilityState === "visible") void this.#resumeCall();
+  };
+
+  #handleOnline = () => void this.#resumeCall();
 
   constructor(voiceSettings: VoiceSettings, modals: ModalController) {
     this.#settings = voiceSettings;
@@ -127,10 +138,22 @@ class Voice {
     this.openModal = modals.openModal;
 
     this.getClient = useClient();
+
+    if (typeof document !== "undefined") {
+      document.addEventListener(
+        "visibilitychange",
+        this.#handleVisibilityChange,
+      );
+    }
+    if (typeof window !== "undefined") {
+      window.addEventListener("online", this.#handleOnline);
+    }
   }
 
   async connect(channel: Channel, auth?: { url: string; token: string }) {
     this.disconnect();
+    this.#shouldReconnect = true;
+    const connectionAttempt = this.#connectionAttempt;
 
     const room = new Room({
       audioCaptureDefaults: {
@@ -196,7 +219,7 @@ class Voice {
     room.addListener("participantConnected", playJoinSound);
     room.addListener("participantDisconnected", playLeaveSound);
 
-    room.addListener("connected", () => {
+    room.addListener(RoomEvent.Connected, () => {
       this.#setState("CONNECTED");
       if (this.speakingPermission)
         room.localParticipant
@@ -213,18 +236,54 @@ class Voice {
           });
     });
 
-    room.addListener("disconnected", () => this.#setState("DISCONNECTED"));
+    room.addListener(RoomEvent.Reconnecting, () =>
+      this.#setState("RECONNECTING"),
+    );
+    room.addListener(RoomEvent.Reconnected, () => this.#setState("CONNECTED"));
+    room.addListener(RoomEvent.Disconnected, () => {
+      this.#setState("DISCONNECTED");
 
-    if (!auth) {
-      auth = await channel.joinCall("worldwide");
-    }
-
-    await room.connect(auth.url, auth.token, {
-      autoSubscribe: false,
+      // Mobile browsers can suspend the LiveKit websocket for longer than its
+      // built-in retry window when the screen is locked. Rejoin with a fresh
+      // token once the page is active again instead of leaving the call dead.
+      if (
+        typeof document === "undefined" ||
+        document.visibilityState === "visible"
+      ) {
+        void this.#resumeCall();
+      }
     });
+
+    try {
+      if (!auth) {
+        auth = await channel.joinCall("worldwide");
+      }
+
+      if (
+        !this.#shouldReconnect ||
+        connectionAttempt !== this.#connectionAttempt
+      ) {
+        return;
+      }
+
+      await room.connect(auth.url, auth.token, {
+        autoSubscribe: false,
+      });
+    } catch (error) {
+      if (
+        this.#shouldReconnect &&
+        connectionAttempt === this.#connectionAttempt
+      ) {
+        this.#setState("DISCONNECTED");
+      }
+      throw error;
+    }
   }
 
   disconnect() {
+    this.#shouldReconnect = false;
+    this.#connectionAttempt++;
+
     try {
       const room = this.room();
       if (!room) return;
@@ -241,6 +300,44 @@ class Voice {
       });
     } catch (e) {
       this.onErr(e);
+    }
+  }
+
+  destroy() {
+    this.disconnect();
+
+    if (typeof document !== "undefined") {
+      document.removeEventListener(
+        "visibilitychange",
+        this.#handleVisibilityChange,
+      );
+    }
+    if (typeof window !== "undefined") {
+      window.removeEventListener("online", this.#handleOnline);
+    }
+  }
+
+  async #resumeCall() {
+    const channel = this.channel();
+    if (
+      !this.#shouldReconnect ||
+      this.#resumeInProgress ||
+      !channel ||
+      this.state() !== "DISCONNECTED"
+    ) {
+      return;
+    }
+
+    this.#resumeInProgress = true;
+    try {
+      await this.connect(channel);
+    } catch (error) {
+      if (this.#shouldReconnect) {
+        this.#setState("DISCONNECTED");
+        console.warn("[rtc] failed to resume voice call", error);
+      }
+    } finally {
+      this.#resumeInProgress = false;
     }
   }
 
@@ -516,6 +613,7 @@ export function VoiceContext(props: { children: JSX.Element }) {
   const state = useState();
   const modals = useModals();
   const voice = new Voice(state.voice, modals);
+  onCleanup(() => voice.destroy());
 
   return (
     <voiceContext.Provider value={voice}>
